@@ -13,84 +13,56 @@ export async function OPTIONS() {
 
 export async function GET() {
   try {
-    // Get all unique builders with their project counts and latest project info
-    const builders = await prisma.project.groupBy({
-      by: ['builderId'],
-      _count: {
-        id: true,
+    // Get all unique builder IDs first
+    const uniqueBuilders = await prisma.project.findMany({
+      select: {
+        builderId: true,
       },
-      orderBy: {
-        _count: {
-          id: 'desc',
-        },
-      },
+      distinct: ['builderId'],
     })
 
-    // Get additional details for each builder
+    // Get detailed info for each builder using simpler queries
     const buildersWithDetails = await Promise.all(
-      builders.map(async (builder) => {
-        // Get the latest project for this builder to get more context
-        const latestProject = await prisma.project.findFirst({
-          where: {
-            builderId: builder.builderId,
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
+      uniqueBuilders.map(async ({ builderId }) => {
+        // Get all projects for this builder
+        const projects = await prisma.project.findMany({
+          where: { builderId },
           include: {
-            milestones: {
-              where: {
-                isCompleted: false,
-              },
-              orderBy: {
-                targetDate: 'asc',
-              },
-            },
+            milestones: true,
           },
         })
 
-        // Get project statistics for this builder
-        const projectStats = await prisma.project.groupBy({
-          by: ['category'],
-          where: {
-            builderId: builder.builderId,
-          },
-          _count: {
-            id: true,
-          },
-        })
+        // Calculate statistics
+        const projectCount = projects.length
+        const categories = projects.reduce((acc, project) => {
+          acc[project.category] = (acc[project.category] || 0) + 1
+          return acc
+        }, {} as Record<string, number>)
 
-        // Count total milestones and completed milestones
-        const milestoneStats = await prisma.milestone.groupBy({
-          by: ['isCompleted'],
-          where: {
-            project: {
-              builderId: builder.builderId,
-            },
-          },
-          _count: {
-            id: true,
-          },
-        })
+        const allMilestones = projects.flatMap(p => p.milestones)
+        const totalMilestones = allMilestones.length
+        const completedMilestones = allMilestones.filter(m => m.isCompleted).length
+        const activeMilestones = allMilestones.filter(m => !m.isCompleted).length
 
-        const totalMilestones = milestoneStats.reduce((sum, stat) => sum + stat._count.id, 0)
-        const completedMilestones = milestoneStats.find(stat => stat.isCompleted)?._count.id || 0
+        const latestProject = projects.sort((a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )[0]
 
         return {
-          builderId: builder.builderId,
-          projectCount: builder._count.id,
-          categories: projectStats.reduce((acc, stat) => {
-            acc[stat.category] = stat._count.id
-            return acc
-          }, {} as Record<string, number>),
+          builderId,
+          projectCount,
+          categories,
           totalMilestones,
           completedMilestones,
-          activeMilestones: latestProject?.milestones.length || 0,
+          activeMilestones,
           latestProjectName: latestProject?.projectName || null,
           latestProjectDate: latestProject?.createdAt || null,
         }
       })
     )
+
+    // Sort by project count descending
+    buildersWithDetails.sort((a, b) => b.projectCount - a.projectCount)
 
     return NextResponse.json(buildersWithDetails, { headers: corsHeaders })
   } catch (error) {
