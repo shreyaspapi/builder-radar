@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '../../../../lib/prisma'
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 200, headers: corsHeaders })
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ milestoneId: string }> }
@@ -31,20 +41,20 @@ export async function PUT(
       data: updateData,
     })
 
-    return NextResponse.json(milestone)
+    return NextResponse.json(milestone, { headers: corsHeaders })
   } catch (error) {
     console.error('Error updating milestone:', error)
 
     if (error instanceof Error && error.message.includes('Record to update not found')) {
       return NextResponse.json(
         { error: 'Milestone not found' },
-        { status: 404 }
+        { status: 404, headers: corsHeaders }
       )
     }
 
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     )
   }
 }
@@ -59,20 +69,20 @@ export async function DELETE(
       where: { id: milestoneId },
     })
 
-    return NextResponse.json({ message: 'Milestone deleted successfully' })
+    return NextResponse.json({ message: 'Milestone deleted successfully' }, { headers: corsHeaders })
   } catch (error) {
     console.error('Error deleting milestone:', error)
 
     if (error instanceof Error && error.message.includes('Record to delete does not exist')) {
       return NextResponse.json(
         { error: 'Milestone not found' },
-        { status: 404 }
+        { status: 404, headers: corsHeaders }
       )
     }
 
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     )
   }
 }

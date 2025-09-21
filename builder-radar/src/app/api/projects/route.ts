@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '../../../lib/prisma'
 import { ProjectCategory } from '../../../generated/prisma'
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 200, headers: corsHeaders })
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -24,7 +34,7 @@ export async function POST(request: NextRequest) {
     if (!builderId || !projectName || !category) {
       return NextResponse.json(
         { error: 'Missing required fields: builderId, projectName, category' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       )
     }
 
@@ -32,7 +42,7 @@ export async function POST(request: NextRequest) {
     if (!Object.values(ProjectCategory).includes(category)) {
       return NextResponse.json(
         { error: 'Invalid category. Must be one of: DEFI, DPIN, INFRA, SOCIAL' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       )
     }
 
@@ -52,14 +62,14 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(project, { status: 201 })
+    return NextResponse.json(project, { status: 201, headers: corsHeaders })
   } catch (error) {
     console.error('Error creating project:', error)
 
 
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     )
   }
 }
@@ -79,12 +89,12 @@ export async function GET() {
       },
     })
 
-    return NextResponse.json(projects)
+    return NextResponse.json(projects, { headers: corsHeaders })
   } catch (error) {
     console.error('Error fetching projects:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     )
   }
 }
