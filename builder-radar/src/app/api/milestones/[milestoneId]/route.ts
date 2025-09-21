@@ -3,13 +3,20 @@ import { prisma } from '../../../../lib/prisma'
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { milestoneId: string } }
+  { params }: { params: Promise<{ milestoneId: string }> }
 ) {
   try {
+    const { milestoneId } = await params
     const body = await request.json()
     const { title, description, targetDate, isCompleted } = body
 
-    const updateData: any = {}
+    const updateData: {
+      title?: string
+      description?: string | null
+      targetDate?: Date | null
+      isCompleted?: boolean
+      completedAt?: Date | null
+    } = {}
 
     if (title !== undefined) updateData.title = title
     if (description !== undefined) updateData.description = description
@@ -20,7 +27,7 @@ export async function PUT(
     }
 
     const milestone = await prisma.milestone.update({
-      where: { id: params.milestoneId },
+      where: { id: milestoneId },
       data: updateData,
     })
 
@@ -44,11 +51,12 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { milestoneId: string } }
+  { params }: { params: Promise<{ milestoneId: string }> }
 ) {
   try {
+    const { milestoneId } = await params
     await prisma.milestone.delete({
-      where: { id: params.milestoneId },
+      where: { id: milestoneId },
     })
 
     return NextResponse.json({ message: 'Milestone deleted successfully' })

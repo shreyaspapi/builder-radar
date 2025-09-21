@@ -15,10 +15,9 @@ datasource db {
 }
 
 model Project {
-  id                    String   @id @default(cuid())
+  id                    Int      @id @default(autoincrement())
   builderId             String
   projectName           String
-  projectId             String   @unique
   description           String?
   category              ProjectCategory
   projectStartDate      DateTime?
@@ -43,7 +42,7 @@ model Milestone {
   targetDate  DateTime?
   isCompleted Boolean  @default(false)
   completedAt DateTime?
-  projectId   String
+  projectId   Int
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

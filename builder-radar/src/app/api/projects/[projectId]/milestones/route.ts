@@ -3,9 +3,10 @@ import { prisma } from '../../../../../lib/prisma'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { projectId: string } }
+  { params }: { params: Promise<{ projectId: string }> }
 ) {
   try {
+    const { projectId } = await params
     const body = await request.json()
     const { title, description, targetDate } = body
 
@@ -17,9 +18,18 @@ export async function POST(
       )
     }
 
+    const projectIdInt = parseInt(projectId)
+
+    if (isNaN(projectIdInt)) {
+      return NextResponse.json(
+        { error: 'Invalid project ID' },
+        { status: 400 }
+      )
+    }
+
     // Check if project exists
     const project = await prisma.project.findUnique({
-      where: { id: params.projectId },
+      where: { id: projectIdInt },
     })
 
     if (!project) {
@@ -34,7 +44,7 @@ export async function POST(
         title,
         description,
         targetDate: targetDate ? new Date(targetDate) : null,
-        projectId: params.projectId,
+        projectId: projectIdInt,
       },
     })
 
@@ -50,12 +60,22 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { projectId: string } }
+  { params }: { params: Promise<{ projectId: string }> }
 ) {
   try {
+    const { projectId } = await params
+    const projectIdInt = parseInt(projectId)
+
+    if (isNaN(projectIdInt)) {
+      return NextResponse.json(
+        { error: 'Invalid project ID' },
+        { status: 400 }
+      )
+    }
+
     const milestones = await prisma.milestone.findMany({
       where: {
-        projectId: params.projectId,
+        projectId: projectIdInt,
       },
       orderBy: {
         targetDate: 'asc',

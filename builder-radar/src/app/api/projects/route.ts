@@ -9,7 +9,6 @@ export async function POST(request: NextRequest) {
     const {
       builderId,
       projectName,
-      projectId,
       description,
       category,
       projectStartDate,
@@ -22,9 +21,9 @@ export async function POST(request: NextRequest) {
     } = body
 
     // Validate required fields
-    if (!builderId || !projectName || !projectId || !category) {
+    if (!builderId || !projectName || !category) {
       return NextResponse.json(
-        { error: 'Missing required fields: builderId, projectName, projectId, category' },
+        { error: 'Missing required fields: builderId, projectName, category' },
         { status: 400 }
       )
     }
@@ -41,7 +40,6 @@ export async function POST(request: NextRequest) {
       data: {
         builderId,
         projectName,
-        projectId,
         description,
         category,
         projectStartDate: projectStartDate ? new Date(projectStartDate) : null,
@@ -58,12 +56,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating project:', error)
 
-    if (error instanceof Error && error.message.includes('Unique constraint')) {
-      return NextResponse.json(
-        { error: 'Project with this projectId already exists' },
-        { status: 409 }
-      )
-    }
 
     return NextResponse.json(
       { error: 'Internal server error' },
