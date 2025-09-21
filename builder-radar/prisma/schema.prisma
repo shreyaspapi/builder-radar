@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id                    String   @id @default(cuid())
+  builderId             String
+  projectName           String
+  projectId             String   @unique
+  description           String?
+  category              ProjectCategory
+  projectStartDate      DateTime?
+  projectEvmAddress     String?
+  websiteLink           String?
+  whatHasBeenAlreadyBuilt String?
+  githubUrl             String?
+  xUrl                  String?
+  farcasterUrl          String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  milestones            Milestone[]
+
+  @@map("projects")
+}
+
+model Milestone {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  targetDate  DateTime?
+  isCompleted Boolean  @default(false)
+  completedAt DateTime?
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("milestones")
+}
+
+enum ProjectCategory {
+  DEFI
+  DPIN
+  INFRA
+  SOCIAL
+}
